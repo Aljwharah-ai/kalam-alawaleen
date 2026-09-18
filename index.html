@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>كلام الأولين</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@700&family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{--sand:#c9a36a;--sand2:#e8d3a4;--panel:rgba(22,16,10,.78);--line:rgba(232,211,164,.22);--good:#7dbe7a;--bad:#c45c4a;--trap:#d4a017}
+*{box-sizing:border-box;margin:0;padding:0}html,body{min-height:100%}
+body{font-family:Tajawal,sans-serif;color:#f6edd8;background:radial-gradient(1200px 700px at 80% -10%,rgba(201,163,106,.18),transparent 50%),linear-gradient(180deg,#2a1c12,#120d0a)}
+.wrap{max-width:560px;margin:0 auto;padding:18px 16px 40px}
+.brand{text-align:center;padding:10px 0 18px}.brand small{display:block;letter-spacing:.3em;color:var(--sand);font-size:12px;margin-bottom:6px}
+.brand h1{font-family:"Noto Naskh Arabic",serif;font-size:34px;color:var(--sand2)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:22px 18px}
+.muted{color:#cbbca3;line-height:1.9;font-size:15px}
+.row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:16px 0 6px}
+.chip{border:1px solid var(--line);color:var(--sand2);border-radius:999px;padding:6px 12px;font-size:13px}
+button{font-family:inherit;cursor:pointer;border:0}
+.btn{width:100%;margin-top:14px;background:linear-gradient(180deg,#e2c48a,#b8893e);color:#2a1b0d;font-weight:800;font-size:18px;border-radius:14px;padding:14px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-size:14px}
+.lives{color:#f0c9b0;letter-spacing:2px}
+.qtype{display:inline-block;background:rgba(201,163,106,.12);color:var(--sand);border-radius:999px;padding:4px 10px;font-size:12px;margin-bottom:10px}
+.prompt{font-family:"Noto Naskh Arabic",serif;font-size:22px;line-height:1.8;margin-bottom:8px}
+.help-line{min-height:24px;color:var(--sand);font-size:14px;line-height:1.7;margin:8px 0 12px}
+.choices{display:grid;gap:10px}
+.choice{text-align:right;background:rgba(255,255,255,.04);border:1px solid var(--line);color:#f6edd8;border-radius:14px;padding:13px 14px;font-size:16px}
+.choice:disabled{opacity:.55}
+.choice.correct{border-color:var(--good);background:rgba(125,190,122,.14)}
+.choice.wrong{border-color:var(--bad);background:rgba(196,92,74,.14)}
+.choice.trap{border-color:var(--trap);background:rgba(212,160,23,.12)}
+.choice.gone{visibility:hidden;height:0;padding:0;border:0}
+.helps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px}
+.help{background:rgba(255,255,255,.03);border:1px solid var(--line);color:var(--sand2);border-radius:12px;padding:10px 6px;font-size:13px}
+.help:disabled{opacity:.35}
+.feedback{margin-top:14px;line-height:1.8}
+.hidden{display:none}
+.title-lg{font-family:"Noto Naskh Arabic",serif;font-size:28px;color:var(--sand2);text-align:center;margin-bottom:8px}
+.center{text-align:center}
+</style></head><body>
+<div class="wrap">
+<header class="brand"><small>لعبة الأمثال</small><h1>كلام الأولين</h1></header>
+<section id="screen-home" class="card">
+<p class="muted">عشرين سؤال من أمثال البدو ونجد. إكمال ومعنى وموقف. الغلط يأكل فرصة، والفخ يأكل فرصتين.</p>
+<div class="row"><span class="chip">20 سؤال</span><span class="chip">3 فرص</span><span class="chip">3 مساعدات</span></div>
+<button class="btn" id="btn-start">ابدأ المجلس</button>
+</section>
+<section id="screen-play" class="card hidden">
+<div class="topbar"><div>سؤال <b id="qnum">1</b> / 20</div><div id="titlechip">سامع</div><div class="lives" id="lives"></div></div>
+<div class="qtype" id="qtype"></div>
+<div class="prompt" id="prompt"></div>
+<div class="help-line" id="hint"></div>
+<div class="choices" id="choices"></div>
+<div class="helps">
+<button class="help" id="h-elder">اسأل كبير</button>
+<button class="help" id="h-cut">شيل البعيد</button>
+<button class="help" id="h-scene">الموقف</button>
+</div>
+<div class="feedback hidden" id="feedback"></div>
+<button class="btn hidden" id="btn-next">السؤال التالي</button>
+</section>
+<section id="screen-end" class="card hidden center">
+<div class="title-lg" id="end-title"></div>
+<p class="muted" id="end-text"></p>
+<button class="btn" id="btn-again">العب من جديد</button>
+</section>
+</div>
+<script src="questions.js"></script>
+<script>
+const QUESTIONS=window.QUESTIONS;
+const TITLES=[[0,"سامع"],[4,"جالس في المجلس"],[8,"فاهم الكلام"],[13,"راعي سنع"],[18,"كبير المجلس"]];
+const TYPE_LABEL={complete:"أكمل المثل",meaning:"وش معناه؟",situation:"متى ينقال؟"};
+const state={i:0,lives:3,locked:false,helps:{elder:true,cut:true,scene:true}};
+const $=id=>document.getElementById(id);
+function titleFor(n){let t=TITLES[0][1];TITLES.forEach(([m,name])=>{if(n>=m)t=name});return t}
+function show(id){["screen-home","screen-play","screen-end"].forEach(s=>$(s).classList.toggle("hidden",s!==id))}
+function renderLives(){$("lives").textContent="فرص "+"●".repeat(state.lives)+"○".repeat(Math.max(0,3-state.lives))}
+function current(){return QUESTIONS[state.i]}
+function renderQuestion(){const q=current();state.locked=false;$("qnum").textContent=String(state.i+1);$("titlechip").textContent=titleFor(state.i);$("qtype").textContent=TYPE_LABEL[q.type];$("prompt").textContent=q.prompt;$("hint").textContent="";$("feedback").classList.add("hidden");$("btn-next").classList.add("hidden");renderLives();
+const box=$("choices");box.innerHTML="";q.choices.forEach((text,idx)=>{const b=document.createElement("button");b.className="choice";b.textContent=["أ","ب","ج","د"][idx]+") "+text;b.dataset.idx=String(idx);b.onclick=()=>pick(idx);box.appendChild(b)})}
+function pick(idx){if(state.locked)return;state.locked=true;const q=current();[...document.querySelectorAll(".choice")].forEach(b=>{const i=Number(b.dataset.idx);if(i===q.answer)b.classList.add("correct");if(i===idx&&idx!==q.answer&&i===q.trap)b.classList.add("trap");else if(i===idx&&idx!==q.answer)b.classList.add("wrong");b.disabled=true});
+const fb=$("feedback");fb.classList.remove("hidden");
+if(idx===q.answer)fb.innerHTML="صح.<br>الجواب اللامع غالبًا: «"+q.choices[q.trap]+"».";
+else if(idx===q.trap){state.lives-=2;fb.innerHTML="هذا فخ.<br>الصح: «"+q.choices[q.answer]+"»."}
+else{state.lives-=1;fb.innerHTML="غلط عادي.<br>الصح: «"+q.choices[q.answer]+"»."}
+if(state.lives<0)state.lives=0;renderLives();$("btn-next").classList.remove("hidden");$("btn-next").textContent=(state.lives<=0||state.i===QUESTIONS.length-1)?"النتيجة":"السؤال التالي"}
+function next(){if(state.lives<=0||state.i>=QUESTIONS.length-1){endGame();return}state.i+=1;renderQuestion()}
+function endGame(){const reached=state.lives<=0?state.i:state.i+1;const perfect=state.lives>0&&state.i===QUESTIONS.length-1;$("end-title").textContent=perfect?"كبير المجلس":titleFor(reached);$("end-text").innerHTML=perfect?"كملت العشرين.":("وصلت السؤال "+(state.i+1)+" من 20.<br>لقبك: "+titleFor(reached)+".");show("screen-end")}
+$("btn-start").onclick=()=>{state.i=0;state.lives=3;state.helps={elder:true,cut:true,scene:true};$("h-elder").disabled=false;$("h-cut").disabled=false;$("h-scene").disabled=false;show("screen-play");renderQuestion()};
+$("btn-again").onclick=()=>$("btn-start").click();
+$("btn-next").onclick=next;
+$("h-elder").onclick=()=>{if(!state.helps.elder||state.locked)return;state.helps.elder=false;$("h-elder").disabled=true;$("hint").textContent="الكبير: "+current().elder};
+$("h-scene").onclick=()=>{if(!state.helps.scene||state.locked)return;state.helps.scene=false;$("h-scene").disabled=true;$("hint").textContent="الموقف: "+current().scene};
+$("h-cut").onclick=()=>{if(!state.helps.cut||state.locked)return;state.helps.cut=false;$("h-cut").disabled=true;const q=current();const drop=[0,1,2,3].find(i=>i!==q.answer&&i!==q.trap);const buttons=[...document.querySelectorAll(".choice")];if(buttons[drop])buttons[drop].classList.add("gone")};
+</script>
+</body></html>
